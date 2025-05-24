@@ -376,6 +376,20 @@ class Exporter:
         model.float()
         model = model.fuse()
 
+        if self.args.half:
+            for name, param in model.named_parameters():
+                if hasattr(param, 'is_quantized') and param.is_quantized:
+                    LOGGER.info(f"Dequantizing parameter '{name}' to float32 before half-precision conversion.")
+                    # Navigate to the parent module of the parameter
+                    obj = model
+                    keys = name.split('.')
+                    # Iterate through the keys to get to the parent object of the parameter
+                    for key_name in keys[:-1]:
+                        obj = getattr(obj, key_name)
+                    # Dequantize the parameter data and replace the parameter
+                    dequantized_data = torch.dequantize(param.data)
+                    setattr(obj, keys[-1], torch.nn.Parameter(dequantized_data))
+
         if imx:
             from ultralytics.utils.torch_utils import FXModel
 
