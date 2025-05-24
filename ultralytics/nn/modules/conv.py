@@ -486,6 +486,8 @@ class RepConv(nn.Module):
             return 0, 0
         if isinstance(branch, Conv):
             kernel = branch.conv.weight
+            if hasattr(kernel, 'is_quantized') and kernel.is_quantized:
+                kernel = torch.dequantize(kernel)
             running_mean = branch.bn.running_mean
             running_var = branch.bn.running_var
             gamma = branch.bn.weight
